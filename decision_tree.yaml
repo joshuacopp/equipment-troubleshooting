@@ -22,9 +22,9 @@ questions:
   not_spinning1:
     text: "Check controller - Verify brush isn't forced off through controller"
     answers:
-      - text: "Forced off"
+      - text: "Brush is forced OFF"
         next: forced_off
-      - text: "On Auto"
+      - text: "Brush is On AUTO"
         next: on_auto
 
   forced_off:
@@ -34,6 +34,14 @@ questions:
         next: set_auto
       - text: "Forced off by maintenance"
         conclusion: "Maintenance has the brush forced off pending repair.  Verify that a request/work order exists on MaintainX app https://app.getmaintainx.com"
+
+  set_auto:
+    text: "Set brush to AUTO - does brush function now that it's set to AUTO?"
+    answers:
+      - text: "Yes, brush works now"
+        conclusion: "Congrats!! You fixed it!"
+      - text: "Brush still not turning on for vehicles when set to AUTO"
+        next: on_auto
 
   on_auto:
     text: "Check MCC - Is there power the VFD?"
@@ -61,13 +69,13 @@ questions:
       - text: "No"
         conclusion: "Likely loss of power to breaker, underlying electrical issue.  Create MaintainX request and contact maintenance/regional manager."
   
-  powered_on_check:
-    text: "Is the equipment running normally (no unusual sounds or vibrations)?"
+  not_deploying:
+    text: "Check controller - Verify brush air isn't forced off through controller"
     answers:
-      - text: "Yes"
-        conclusion: "Equipment appears to be operating normally. If you're experiencing issues, please describe the specific problem."
-      - text: "No"
-        next: abnormal_operation
+      - text: "Brush air is forced OFF"
+        next: forced_off
+      - text: "Brush air is On AUTO"
+        next: on_auto
   
   abnormal_operation:
     text: "What type of abnormal operation are you observing?"

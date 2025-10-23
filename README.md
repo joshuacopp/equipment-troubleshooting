@@ -1,188 +1,231 @@
-# Equipment Troubleshooting Tool
+# Equipment Troubleshooting Tool - PostgreSQL Version
 
-A Flask-based web application for creating interactive decision trees to troubleshoot mechanical equipment.
+A Flask web application with PostgreSQL database and admin interface for managing troubleshooting decision trees.
 
-## What You've Got
+## What's New
 
-- **app.py** - Main Flask application
-- **decision_tree.yaml** - Your troubleshooting logic (edit this to customize)
-- **templates/** - HTML templates for the web interface
+- ✅ **PostgreSQL database** instead of YAML
+- ✅ **Admin interface** at `/admin` for managing questions
+- ✅ **Supabase integration** for cloud database
+- ✅ **Scalable** - handles thousands of questions easily
+- ✅ **User-friendly** - edit questions through web forms
+
+## Files
+
+- **app.py** - Main Flask application with admin routes
+- **models.py** - Database models (Question and Answer tables)
+- **init_db.py** - Database initialization and YAML migration script
+- **decision_tree.yaml** - Your existing questions (for migration)
+- **templates/** - HTML templates (user-facing and admin)
 - **requirements.txt** - Python dependencies
 
-## Quick Start (Local Testing)
+## Deployment to Render with Supabase
 
-### 1. Install Python
-Make sure you have Python 3.8+ installed. Check with:
-```bash
-python --version
+### Step 1: Set Up Supabase Database
+
+You already have this! Your connection string:
+```
+postgresql://postgres:[YOUR_PASSWORD]@db.xxxxxxxxxxxxx.supabase.co:5432/postgres
 ```
 
-### 2. Install Dependencies
+### Step 2: Push Code to GitHub
+
+1. Delete your old files from GitHub repo
+2. Upload all these new files:
+   - app.py
+   - models.py
+   - init_db.py
+   - requirements.txt
+   - templates/ (entire folder with all HTML files)
+   - decision_tree.yaml (for initial migration)
+
+### Step 3: Configure Render
+
+1. Go to your Render service
+2. Click **"Environment"** in the left sidebar
+3. Add these environment variables:
+
+**DATABASE_URL**
+```
+postgresql://postgres:[YOUR_PASSWORD]@db.xxxxxxxxxxxxx.supabase.co:5432/postgres
+```
+(Replace with your actual Supabase connection string)
+
+**SECRET_KEY**
+```
+your-random-secret-key-here-make-it-long-and-random
+```
+(Generate a random string - this secures sessions)
+
+**ADMIN_USERNAME** (optional, defaults to "admin")
+```
+admin
+```
+
+**ADMIN_PASSWORD** (optional, defaults to "changeme")
+```
+your-secure-password-here
+```
+
+4. Click "Save Changes"
+
+### Step 4: Initialize Database (ONE TIME ONLY)
+
+After your first deployment completes:
+
+1. In Render, go to your service
+2. Click **"Shell"** tab at the top
+3. Run this command:
 ```bash
+python init_db.py
+```
+
+This will:
+- Create the database tables
+- Migrate your YAML data to PostgreSQL
+- Set everything up
+
+You only need to do this ONCE!
+
+### Step 5: Test It
+
+1. Visit your app URL: `https://your-app.onrender.com`
+2. Test the troubleshooting flow
+3. Visit `/admin/login` and log in with your admin credentials
+4. Try adding/editing questions
+
+## Using the Admin Interface
+
+### Accessing Admin
+
+Go to: `https://your-app.onrender.com/admin/login`
+
+Default credentials:
+- Username: `admin`
+- Password: `changeme` (or whatever you set in environment variables)
+
+### Managing Questions
+
+1. **View All Questions**: Dashboard shows all questions organized by category
+2. **Add Question**: Click "Add New Question" button
+3. **Edit Question**: Click "Edit" on any question
+4. **Add Answers**: After creating a question, add answer options
+5. **Delete**: Remove questions/answers you don't need
+
+### Question Structure
+
+Each question needs:
+- **Question ID**: Unique identifier (e.g., `start`, `brush_check`)
+- **Question Text**: What users see
+- **Category**: Optional grouping
+
+Each answer needs:
+- **Answer Text**: The option users select
+- **Either**:
+  - **Next Question ID**: To continue the flow, OR
+  - **Conclusion**: To end with a diagnosis/solution
+
+### Tips
+
+- Start with question ID: `start` (this is the entry point)
+- Use descriptive IDs: `check_motor_temp` not `q1`
+- Categories help organize long lists: "Brush", "Chemical", "HP"
+- You can link back to earlier questions to create loops if needed
+
+## Local Development
+
+### Setup
+
+```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Run the App
-```bash
+# Set environment variable
+export DATABASE_URL="postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres"
+
+# Initialize database (first time only)
+python init_db.py
+
+# Run app
 python app.py
 ```
 
-Open your browser to: `http://localhost:5000`
+Visit: `http://localhost:5000`
 
-## Customizing Your Decision Tree
+## Database Schema
 
-Edit `decision_tree.yaml` to add your own troubleshooting logic. The structure is:
+### questions table
+- id (primary key)
+- question_id (unique string)
+- text
+- category
+- created_at
 
-```yaml
-questions:
-  question_id:
-    text: "Your question here?"
-    answers:
-      - text: "Answer option 1"
-        next: next_question_id
-      - text: "Answer option 2"
-        conclusion: "Final diagnosis/solution"
-```
-
-### Key Rules:
-- Each question needs a unique ID (like `start`, `motor_check`, etc.)
-- Answers can either:
-  - Lead to another question: `next: question_id`
-  - End with a conclusion: `conclusion: "Your solution here"`
-- Always start from the question with ID `start`
-
-### Example Addition:
-```yaml
-  check_oil_level:
-    text: "Is the oil level within normal range?"
-    answers:
-      - text: "Yes, oil level is normal"
-        next: check_filter
-      - text: "No, oil level is low"
-        conclusion: "Add oil to proper level. Check for leaks if oil consumption is excessive."
-```
-
-## Deploying to Cloud (Render - Free)
-
-### Option 1: Deploy to Render (Recommended)
-
-1. **Create a GitHub account** (if you don't have one)
-   - Go to github.com and sign up
-
-2. **Create a new repository**
-   - Click "New repository"
-   - Name it something like "equipment-troubleshooting"
-   - Make it private if you want
-   - Don't initialize with README (you already have files)
-
-3. **Upload your files to GitHub**
-   
-   If you have git installed:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-   git push -u origin main
-   ```
-   
-   Or use GitHub's web interface to upload files directly.
-
-4. **Deploy to Render**
-   - Go to render.com and sign up (free)
-   - Click "New +" → "Web Service"
-   - Connect your GitHub account
-   - Select your repository
-   - Configure:
-     - **Name**: equipment-troubleshooting (or whatever you want)
-     - **Environment**: Python 3
-     - **Build Command**: `pip install -r requirements.txt`
-     - **Start Command**: `gunicorn app:app`
-   - Click "Create Web Service"
-
-5. **Add Gunicorn** (required for production)
-   Add this line to your `requirements.txt`:
-   ```
-   gunicorn==21.2.0
-   ```
-   Commit and push the change.
-
-6. **Access your app**
-   - Render will give you a URL like: `https://equipment-troubleshooting.onrender.com`
-   - Share this with your team!
-
-### Important Notes for Production:
-
-1. **Change the secret key** in `app.py`:
-   ```python
-   app.secret_key = 'your-secret-key-change-this-in-production'
-   ```
-   Generate a random string for this.
-
-2. **Free tier limitations**:
-   - App sleeps after 15 minutes of inactivity
-   - First request after sleep takes ~30 seconds
-   - 750 hours/month free (plenty for internal tools)
-
-3. **To avoid sleep** (paid tier ~$7/month):
-   - Upgrade to paid instance in Render dashboard
-
-## Alternative Deployment Options
-
-### Option 2: PythonAnywhere
-1. Sign up at pythonanywhere.com (free tier available)
-2. Upload your files
-3. Configure a web app pointing to `app.py`
-4. Access at: `your-username.pythonanywhere.com`
-
-### Option 3: Railway
-1. Sign up at railway.app
-2. Deploy from GitHub
-3. Similar to Render but different interface
+### answers table
+- id (primary key)
+- question_id (foreign key)
+- text
+- next_question_id (nullable)
+- conclusion (nullable)
+- order
+- created_at
 
 ## Troubleshooting
 
-**App won't start locally?**
-- Make sure Flask and PyYAML are installed: `pip install -r requirements.txt`
-- Check that `decision_tree.yaml` exists in the same folder as `app.py`
+**App won't start?**
+- Check that DATABASE_URL is set in Render environment variables
+- Make sure you ran `init_db.py` to create tables
 
-**Changes to YAML not showing up?**
-- Restart the Flask app (Ctrl+C, then `python app.py` again)
-- On cloud platforms, push changes to GitHub and Render will auto-deploy
+**"Question not found" error?**
+- Make sure you have a question with ID "start"
+- Check admin dashboard to see all questions
 
-**Getting deployment errors?**
-- Make sure `requirements.txt` includes all dependencies
-- Check that `gunicorn` is in `requirements.txt` for production
-- Verify your `decision_tree.yaml` syntax is valid (use a YAML validator online)
+**Can't log into admin?**
+- Check ADMIN_USERNAME and ADMIN_PASSWORD environment variables
+- Default is admin/changeme
 
-## Adding More Features
+**Want to reset database?**
+- Run `init_db.py` again - it will clear and reimport from YAML
+- Or delete data directly in Supabase dashboard
 
-Want to add:
-- **User authentication?** Add Flask-Login
-- **Save diagnostic history?** Add a database (SQLite for simple, PostgreSQL for production)
-- **Email reports?** Add Flask-Mail
-- **Multiple equipment types?** Create multiple YAML files and add a selection screen
+**Changes not showing?**
+- Clear browser cache (Ctrl+Shift+R)
+- Check Render logs for errors
 
-## File Structure
-```
-your-project/
-├── app.py                 # Main Flask application
-├── decision_tree.yaml     # Your troubleshooting logic
-├── requirements.txt       # Python dependencies
-├── templates/
-│   ├── index.html        # Landing page
-│   ├── question.html     # Question display
-│   └── conclusion.html   # Results page
-└── README.md             # This file
-```
+## Migration from YAML Version
+
+If you were using the old YAML version:
+
+1. Keep your `decision_tree.yaml` file
+2. Deploy this new version
+3. Run `init_db.py` - it will migrate your YAML data
+4. After migration, you can delete `decision_tree.yaml` from your repo
+5. All future changes happen through the admin interface
+
+## Security Notes
+
+**IMPORTANT:**
+1. Change the default admin password immediately
+2. Use a strong SECRET_KEY (long random string)
+3. Don't commit environment variables to GitHub
+4. Supabase connection string contains password - keep it secret
+
+## Future Enhancements
+
+Easy additions you could make:
+- Photo uploads for specific issues
+- User accounts with different permission levels
+- Analytics on most common issues
+- Export diagnostic reports as PDF
+- Integration with work order systems
+- Multiple equipment types in one app
 
 ## Support
 
-Questions? Issues? 
-- Check Flask documentation: flask.palletsprojects.com
-- Check Render documentation: render.com/docs
-- YAML syntax: yaml.org
+Questions? Issues?
+- Check Render logs for errors
+- Check Supabase logs for database issues
+- Test locally first before deploying
 
 ## License
 
