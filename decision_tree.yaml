@@ -10,7 +10,7 @@ questions:
         next: hp_check
   
   brush_check:
-  text: "What's the issue?"
+    text: "What's the issue?"
     answers:
       - text: "Not Spinning"
         next: not_spinning1
@@ -19,16 +19,16 @@ questions:
       - text: "Timing/Pressure Issues"
         next: timing_pressure
 
-not_spinning1:
-  text: "Check controller - Verify brush isn't forced off through controller"
+  not_spinning1:
+    text: "Check controller - Verify brush isn't forced off through controller"
     answers:
       - text: "Forced off"
         next: forced_off
       - text: "On Auto"
         next: on_auto
 
-forced_off:
-  text: "Verify with Maintenance that the brush isn't forced off for a reason"
+  forced_off:
+    text: "Verify with Maintenance that the brush isn't forced off for a reason"
     answers:
       - text: "Brush NOT forced off by maintenance team"
         next: set_auto
@@ -37,7 +37,7 @@ forced_off:
 
   on_auto:
     text: "Check MCC - Is there power the VFD?"
-      answers:
+    answers:
         - text: "VFD has power (LED screen display ON, indicator lights illuminated)"
           next: vfd_check
         - text: "VFD does not have power (LED screen display OFF/no lights on VFD)"
@@ -45,7 +45,7 @@ forced_off:
 
   vfd_check:
     text: "Does the VFD display show an error, or normal operation? (Normal operation consists of the display smoothly ramping up and down each time the brush turns on/off)"
-      answers:
+    answers:
         - text: "Normal operation"
           next: siezed
         - text: "VFD does nothing"
