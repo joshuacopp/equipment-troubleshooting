@@ -269,6 +269,61 @@ def admin_delete_answer(id):
     
     flash('Answer deleted successfully', 'success')
     return redirect(url_for('admin_edit_question', id=question_id))
+@app.route('/setup-database')
+def setup_database():
+    """One-time database setup - DELETE THIS ROUTE AFTER USE"""
+    import yaml
+    from models import Question, Answer
+    
+    try:
+        # Create tables
+        db.create_all()
+        
+        # Clear existing data
+        Answer.query.delete()
+        Question.query.delete()
+        db.session.commit()
+        
+        # Load YAML
+        with open('decision_tree.yaml', 'r') as f:
+            data = yaml.safe_load(f)
+        
+        questions_data = data.get('questions', {})
+        question_map = {}
+        
+        # Create questions
+        for q_id, q_data in questions_data.items():
+            question = Question(
+                question_id=q_id,
+                text=q_data['text'],
+                category=''
+            )
+            db.session.add(question)
+            question_map[q_id] = question
+        
+        db.session.commit()
+        
+        # Create answers
+        answer_count = 0
+        for q_id, q_data in questions_data.items():
+            question_obj = question_map[q_id]
+            for idx, answer_data in enumerate(q_data.get('answers', [])):
+                answer = Answer(
+                    question_id=question_obj.id,
+                    text=answer_data['text'],
+                    next_question_id=answer_data.get('next'),
+                    conclusion=answer_data.get('conclusion'),
+                    order=idx + 1
+                )
+                db.session.add(answer)
+                answer_count += 1
+        
+        db.session.commit()
+        
+        return f"✅ Success! Created {len(questions_data)} questions and {answer_count} answers. NOW DELETE THIS ROUTE FROM app.py!"
+    
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
