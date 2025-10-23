@@ -1,27 +1,65 @@
 questions:
   start:
-    text: "Is the equipment powered on?"
+    text: "What are you having trouble with?"
     answers:
-      - text: "Yes"
-        next: powered_on_check
-      - text: "No"
-        next: power_check
+      - text: "Brush"
+        next: brush_check
+      - text: "Chemical"
+        next: chemical_check
+      - text: "High Pressure"
+        next: hp_check
   
-  power_check:
-    text: "Is the power indicator light illuminated?"
+  brush_check:
+  text: "What's the issue?"
     answers:
-      - text: "Yes"
-        conclusion: "Power supply OK but equipment not starting. Check main power switch and internal fuses."
-      - text: "No"
-        next: check_breaker
-  
-  check_breaker:
+      - text: "Not Spinning"
+        next: not_spinning1
+      - text: "Not Deploying"
+        next: not_deploying
+      - text: "Timing/Pressure Issues"
+        next: timing_pressure
+
+not_spinning1:
+  text: "Check controller - Verify brush isn't forced off through controller"
+    answers:
+      - text: "Forced off"
+        next: forced_off
+      - text: "On Auto"
+        next: on_auto
+
+forced_off:
+  text: "Verify with Maintenance that the brush isn't forced off for a reason"
+    answers:
+      - text: "Brush NOT forced off by maintenance team"
+        next: set_auto
+      - text: "Forced off by maintenance"
+        conclusion: "Maintenance has the brush forced off pending repair.  Verify that a request/work order exists on MaintainX app https://app.getmaintainx.com"
+
+  on_auto:
+    text: "Check MCC - Is there power the VFD?"
+      answers:
+        - text: "VFD has power (LED screen display ON, indicator lights illuminated)"
+          next: vfd_check
+        - text: "VFD does not have power (LED screen display OFF/no lights on VFD)"
+          next: breaker_check
+
+  vfd_check:
+    text: "Does the VFD display show an error, or normal operation? (Normal operation consists of the display smoothly ramping up and down each time the brush turns on/off)"
+      answers:
+        - text: "Normal operation"
+          next: siezed
+        - text: "VFD does nothing"
+          next: force_brush_on
+        - text: "VFD displaying fault"
+          next: record_vfd_fault
+
+  breaker_check:
     text: "Is the circuit breaker tripped?"
     answers:
       - text: "Yes"
-        conclusion: "Reset circuit breaker. If it trips again immediately, there may be a short circuit - contact maintenance."
+        conclusion: "Reset circuit breaker. If it trips again immediately/trips as soon as the piece of equipment turns on, there may be a short circuit - create MaintainX request and contact maintenance/regional manager."
       - text: "No"
-        conclusion: "No power to equipment. Check power cord connection, outlet voltage, and upstream power distribution."
+        conclusion: "Likely loss of power to breaker, underlying electrical issue.  Create MaintainX request and contact maintenance/regional manager."
   
   powered_on_check:
     text: "Is the equipment running normally (no unusual sounds or vibrations)?"
