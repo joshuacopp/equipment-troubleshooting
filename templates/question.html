@@ -148,24 +148,56 @@
         .restart-btn:hover {
             background: #d0d0d0;
         }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .flash.error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .flash.success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
         <div class="question-card">
             <div class="progress">Question {{ history|length + 1 }}</div>
-            <h2>{{ question_data.text }}</h2>
+            <h2>{{ question.text }}</h2>
             
             <form method="POST">
                 <div class="answers">
-                    {% for answer in question_data.answers %}
+                    {% for answer in answers %}
                     <div class="answer-option">
                         <input type="radio" 
-                               id="answer{{ loop.index }}" 
-                               name="answer" 
-                               value="{{ answer.text }}"
+                               id="answer{{ answer.id }}" 
+                               name="answer_id" 
+                               value="{{ answer.id }}"
                                required>
-                        <label for="answer{{ loop.index }}">{{ answer.text }}</label>
+                        <label for="answer{{ answer.id }}">{{ answer.text }}</label>
                     </div>
                     {% endfor %}
                 </div>
