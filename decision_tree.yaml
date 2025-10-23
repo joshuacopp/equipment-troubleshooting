@@ -1,0 +1,90 @@
+questions:
+  start:
+    text: "Is the equipment powered on?"
+    answers:
+      - text: "Yes"
+        next: powered_on_check
+      - text: "No"
+        next: power_check
+  
+  power_check:
+    text: "Is the power indicator light illuminated?"
+    answers:
+      - text: "Yes"
+        conclusion: "Power supply OK but equipment not starting. Check main power switch and internal fuses."
+      - text: "No"
+        next: check_breaker
+  
+  check_breaker:
+    text: "Is the circuit breaker tripped?"
+    answers:
+      - text: "Yes"
+        conclusion: "Reset circuit breaker. If it trips again immediately, there may be a short circuit - contact maintenance."
+      - text: "No"
+        conclusion: "No power to equipment. Check power cord connection, outlet voltage, and upstream power distribution."
+  
+  powered_on_check:
+    text: "Is the equipment running normally (no unusual sounds or vibrations)?"
+    answers:
+      - text: "Yes"
+        conclusion: "Equipment appears to be operating normally. If you're experiencing issues, please describe the specific problem."
+      - text: "No"
+        next: abnormal_operation
+  
+  abnormal_operation:
+    text: "What type of abnormal operation are you observing?"
+    answers:
+      - text: "Unusual noise (grinding, squealing, knocking)"
+        next: noise_diagnosis
+      - text: "Excessive vibration"
+        next: vibration_diagnosis
+      - text: "Overheating"
+        next: temperature_diagnosis
+      - text: "Performance issues (slow, weak output)"
+        next: performance_diagnosis
+  
+  noise_diagnosis:
+    text: "When does the noise occur?"
+    answers:
+      - text: "During startup only"
+        conclusion: "Startup noise may indicate bearing wear or lubrication issues. Schedule maintenance to inspect bearings and apply appropriate lubrication."
+      - text: "Continuously during operation"
+        conclusion: "Continuous noise indicates worn bearings, misalignment, or loose components. Stop equipment and inspect for: worn bearings, loose mounting bolts, misaligned drive components."
+      - text: "Intermittently"
+        conclusion: "Intermittent noise may indicate loose parts or debris. Inspect for loose fasteners, foreign objects, or worn couplings."
+  
+  vibration_diagnosis:
+    text: "Is the vibration constant or does it change with speed?"
+    answers:
+      - text: "Constant at all speeds"
+        conclusion: "Constant vibration indicates imbalance or misalignment. Check: mounting bolts are tight, equipment is level, rotating components are balanced, shaft alignment."
+      - text: "Changes with speed"
+        conclusion: "Speed-dependent vibration suggests resonance or worn components. Check: bearing condition, belt tension (if applicable), foundation stability."
+  
+  temperature_diagnosis:
+    text: "Where is the excessive heat concentrated?"
+    answers:
+      - text: "Motor/drive unit"
+        next: motor_heat
+      - text: "Bearing areas"
+        conclusion: "Hot bearings indicate inadequate lubrication or bearing failure. Stop equipment immediately. Check lubrication level and condition. Bearings may need replacement."
+      - text: "Overall equipment temperature high"
+        conclusion: "Overall high temperature may indicate: blocked ventilation, ambient temperature too high, overloading, or coolant issues. Check cooling system and reduce load if possible."
+  
+  motor_heat:
+    text: "Can you hear the motor running?"
+    answers:
+      - text: "Yes, motor is running"
+        conclusion: "Hot motor while running indicates: overloading, poor ventilation, or motor issues. Check amp draw against nameplate, clear any obstructions from cooling vents, reduce load if possible."
+      - text: "No, motor is humming but not rotating"
+        conclusion: "Motor humming but not rotating indicates: locked rotor, failed start capacitor (single phase), or mechanical jam. TURN OFF IMMEDIATELY to prevent motor damage. Check for mechanical obstructions."
+  
+  performance_diagnosis:
+    text: "How would you describe the performance issue?"
+    answers:
+      - text: "Slower than normal operation"
+        conclusion: "Reduced speed may indicate: worn drive belts, low voltage, motor issues, or increased mechanical resistance. Check belt condition and tension, verify supply voltage, inspect for binding or drag."
+      - text: "Reduced output/capacity"
+        conclusion: "Reduced output may indicate: worn components, clogged filters/screens, improper adjustments, or seal leaks. Check filters, inspect wear parts, verify all adjustments are per specification."
+      - text: "Intermittent operation"
+        conclusion: "Intermittent operation suggests: loose electrical connections, thermal overload cycling, or control system issues. Check all electrical connections, verify overload settings, test control components."
