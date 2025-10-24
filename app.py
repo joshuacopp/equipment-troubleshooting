@@ -3,7 +3,7 @@ import os
 from models import db, Question, Answer
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'change-this-in-production-please')
+app.secret_key = os.environ.get('SECRET_KEY')
 
 # Database configuration
 database_url = os.environ.get('DATABASE_URL')
@@ -14,9 +14,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
-# Admin credentials - change these!
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'changeme')
+# Admin credentials from environment variables
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 
 @app.route('/')
 def index():
@@ -269,17 +269,22 @@ def admin_delete_answer(id):
     
     flash('Answer deleted successfully', 'success')
     return redirect(url_for('admin_edit_question', id=question_id))
-@app.route('/setup-database')
+
+@app.route('/setup-database-initialize')
 def setup_database():
-    """One-time database setup - DELETE THIS ROUTE AFTER USE"""
+    """
+    ONE-TIME database initialization route
+    Visit this URL once after deployment to set up your database
+    DELETE THIS ROUTE after successful setup for security
+    """
     import yaml
-    from models import Question, Answer
     
     try:
         # Create tables
-        db.create_all()
+        with app.app_context():
+            db.create_all()
         
-        # Clear existing data
+        # Clear existing data (if any)
         Answer.query.delete()
         Question.query.delete()
         db.session.commit()
@@ -296,7 +301,7 @@ def setup_database():
             question = Question(
                 question_id=q_id,
                 text=q_data['text'],
-                category=''
+                category=q_data.get('category', '')
             )
             db.session.add(question)
             question_map[q_id] = question
@@ -320,10 +325,120 @@ def setup_database():
         
         db.session.commit()
         
-        return f"✅ Success! Created {len(questions_data)} questions and {answer_count} answers. NOW DELETE THIS ROUTE FROM app.py!"
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Database Setup Complete</title>
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    max-width: 800px;
+                    margin: 50px auto;
+                    padding: 20px;
+                    background: #f5f5f5;
+                }}
+                .success {{
+                    background: white;
+                    padding: 40px;
+                    border-radius: 12px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }}
+                h1 {{ color: #22c55e; }}
+                .warning {{
+                    background: #fef3c7;
+                    border-left: 4px solid #f59e0b;
+                    padding: 15px;
+                    margin: 20px 0;
+                }}
+                .stats {{
+                    background: #f0f9ff;
+                    padding: 15px;
+                    border-radius: 6px;
+                    margin: 20px 0;
+                }}
+                a {{
+                    display: inline-block;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    margin-top: 20px;
+                }}
+                a:hover {{ opacity: 0.9; }}
+            </style>
+        </head>
+        <body>
+            <div class="success">
+                <h1>✅ Database Setup Complete!</h1>
+                
+                <div class="stats">
+                    <strong>Import Summary:</strong><br>
+                    • {len(questions_data)} questions created<br>
+                    • {answer_count} answers created<br>
+                    • Database tables initialized
+                </div>
+                
+                <div class="warning">
+                    <strong>⚠️ IMPORTANT SECURITY STEP:</strong><br>
+                    You must now DELETE the /setup-database-initialize route from app.py in GitHub.
+                    This route should not be accessible in production.
+                </div>
+                
+                <p>Your troubleshooting app is ready to use!</p>
+                
+                <a href="/">Go to Homepage</a>
+                <a href="/admin/login" style="background: #6b7280; margin-left: 10px;">Admin Login</a>
+            </div>
+        </body>
+        </html>
+        """
     
     except Exception as e:
-        return f"❌ Error: {str(e)}"
+        db.session.rollback()
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Database Setup Error</title>
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    max-width: 800px;
+                    margin: 50px auto;
+                    padding: 20px;
+                    background: #f5f5f5;
+                }}
+                .error {{
+                    background: white;
+                    padding: 40px;
+                    border-radius: 12px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }}
+                h1 {{ color: #ef4444; }}
+                pre {{
+                    background: #1f2937;
+                    color: #f9fafb;
+                    padding: 20px;
+                    border-radius: 6px;
+                    overflow-x: auto;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="error">
+                <h1>❌ Database Setup Error</h1>
+                <p>An error occurred during database initialization:</p>
+                <pre>{str(e)}</pre>
+                <p>Check your DATABASE_URL environment variable and try again.</p>
+            </div>
+        </body>
+        </html>
+        """
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
