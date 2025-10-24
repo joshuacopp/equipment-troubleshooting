@@ -108,6 +108,12 @@
             font-size: 0.9em;
         }
         
+        .btn-icon {
+            padding: 6px 10px;
+            font-size: 1.2em;
+            line-height: 1;
+        }
+        
         .form-actions {
             display: flex;
             gap: 15px;
@@ -150,14 +156,32 @@
         .answer-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: start;
             margin-bottom: 15px;
+        }
+        
+        .answer-number {
+            background: #667eea;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9em;
+            margin-right: 12px;
+            display: inline-block;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .answer-content {
+            flex: 1;
         }
         
         .answer-text {
             color: #333;
             margin-bottom: 10px;
             font-weight: 600;
+            font-size: 1.05em;
         }
         
         .answer-details {
@@ -167,7 +191,8 @@
         
         .answer-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
         
         .add-answer-form {
@@ -194,6 +219,12 @@
             padding: 15px;
             background: white;
             border-radius: 6px;
+        }
+        
+        .edit-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid #ddd;
         }
     </style>
     <script>
@@ -250,25 +281,34 @@
                 {% for answer in answers %}
                     <div class="answer-item">
                         <div class="answer-header">
-                            <div>
-                                <div class="answer-text">{{ answer.text }}</div>
-                                <div class="answer-details">
-                                    {% if answer.next_question_id %}
-                                        → Next: <strong>{{ answer.next_question_id }}</strong>
-                                    {% elif answer.conclusion %}
-                                        ✓ Conclusion: {{ answer.conclusion[:100] }}{% if answer.conclusion|length > 100 %}...{% endif %}
-                                    {% endif %}
+                            <div style="display: flex; align-items: start; flex: 1;">
+                                <span class="answer-number">#{{ answer.order }}</span>
+                                <div class="answer-content">
+                                    <div class="answer-text">{{ answer.text }}</div>
+                                    <div class="answer-details">
+                                        {% if answer.next_question_id %}
+                                            → Next: <strong>{{ answer.next_question_id }}</strong>
+                                        {% elif answer.conclusion %}
+                                            ✓ Conclusion: {{ answer.conclusion[:100] }}{% if answer.conclusion|length > 100 %}...{% endif %}
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                             <div class="answer-actions">
-                                <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('edit-answer-{{ answer.id }}').style.display='block'">Edit</button>
+                                <form method="POST" action="{{ url_for('admin_move_answer_up', id=answer.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-secondary btn-small btn-icon" title="Move up">↑</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin_move_answer_down', id=answer.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-secondary btn-small btn-icon" title="Move down">↓</button>
+                                </form>
+                                <button type="button" class="btn btn-secondary btn-small" onclick="document.getElementById('edit-answer-{{ answer.id }}').style.display='block'; this.style.display='none';">Edit</button>
                                 <form method="POST" action="{{ url_for('admin_delete_answer', id=answer.id) }}" style="display: inline;" onsubmit="return confirm('Delete this answer?')">
                                     <button type="submit" class="btn btn-danger btn-small">Delete</button>
                                 </form>
                             </div>
                         </div>
                         
-                        <div id="edit-answer-{{ answer.id }}" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                        <div id="edit-answer-{{ answer.id }}" class="edit-form" style="display: none;">
                             <form method="POST" action="{{ url_for('admin_edit_answer', id=answer.id) }}">
                                 <div class="form-group">
                                     <label>Answer Text</label>

@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
 import os
-from models import db, Question, Answer
+from models import db, Question, Answer, TroubleshootingSession
+import uuid
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
@@ -29,6 +31,21 @@ def start():
     session.clear()
     session['history'] = []
     session['current_question'] = 'start'
+    
+    # Create new session tracking
+    session_id = str(uuid.uuid4())
+    session['tracking_id'] = session_id
+    
+    # Create database record
+    new_session = TroubleshootingSession(
+        session_id=session_id,
+        started_at=datetime.utcnow(),
+        ip_address=request.remote_addr,
+        user_agent=request.headers.get('User-Agent', '')[:500]
+    )
+    db.session.add(new_session)
+    db.session.commit()
+    
     return redirect(url_for('question'))
 
 @app.route('/question', methods=['GET', 'POST'])
@@ -99,6 +116,17 @@ def conclusion():
     
     history = session.get('history', [])
     
+    # Update session tracking
+    tracking_id = session.get('tracking_id')
+    if tracking_id:
+        tracking_session = TroubleshootingSession.query.filter_by(session_id=tracking_id).first()
+        if tracking_session:
+            tracking_session.completed_at = datetime.utcnow()
+            tracking_session.path_taken = history
+            tracking_session.conclusion_reached = conclusion_text
+            tracking_session.abandoned = False
+            db.session.commit()
+    
     return render_template('conclusion.html', 
                          conclusion=conclusion_text,
                          history=history)
@@ -147,7 +175,11 @@ def admin_required(f):
 @admin_required
 def admin_dashboard():
     """Admin dashboard"""
-    questions = Question.query.order_by(Question.category, Question.question_id).all()
+    # Sort by category first, then by question_id alphabetically
+    questions = Question.query.order_by(
+        Question.category.asc().nullsfirst(),
+        Question.question_id.asc()
+    ).all()
     return render_template('admin_dashboard.html', questions=questions)
 
 @app.route('/admin/question/add', methods=['GET', 'POST'])
@@ -192,8 +224,9 @@ def admin_edit_question(id):
         flash('Question updated successfully', 'success')
         return redirect(url_for('admin_edit_question', id=id))
     
-    answers = Answer.query.filter_by(question_id=id).order_by(Answer.order).all()
-    all_questions = Question.query.order_by(Question.question_id).all()
+    # Sort answers by order
+    answers = Answer.query.filter_by(question_id=id).order_by(Answer.order.asc()).all()
+    all_questions = Question.query.order_by(Question.question_id.asc()).all()
     
     return render_template('admin_question_form.html', 
                          question=question, 
@@ -270,7 +303,99 @@ def admin_delete_answer(id):
     flash('Answer deleted successfully', 'success')
     return redirect(url_for('admin_edit_question', id=question_id))
 
-)
+@app.route('/admin/answer/<int:id>/move-up', methods=['POST'])
+@admin_required
+def admin_move_answer_up(id):
+    """Move answer up in order"""
+    answer = Answer.query.get_or_404(id)
+    
+    # Find answer above this one
+    answer_above = Answer.query.filter(
+        Answer.question_id == answer.question_id,
+        Answer.order < answer.order
+    ).order_by(Answer.order.desc()).first()
+    
+    if answer_above:
+        # Swap orders
+        answer.order, answer_above.order = answer_above.order, answer.order
+        db.session.commit()
+        flash('Answer moved up', 'success')
+    else:
+        flash('Answer is already at the top', 'error')
+    
+    return redirect(url_for('admin_edit_question', id=answer.question_id))
+
+@app.route('/admin/answer/<int:id>/move-down', methods=['POST'])
+@admin_required
+def admin_move_answer_down(id):
+    """Move answer down in order"""
+    answer = Answer.query.get_or_404(id)
+    
+    # Find answer below this one
+    answer_below = Answer.query.filter(
+        Answer.question_id == answer.question_id,
+        Answer.order > answer.order
+    ).order_by(Answer.order.asc()).first()
+    
+    if answer_below:
+        # Swap orders
+        answer.order, answer_below.order = answer_below.order, answer.order
+        db.session.commit()
+        flash('Answer moved down', 'success')
+    else:
+        flash('Answer is already at the bottom', 'error')
+    
+    return redirect(url_for('admin_edit_question', id=answer.question_id))
+
+@app.route('/admin/analytics')
+@admin_required
+def admin_analytics():
+    """Analytics dashboard"""
+    from sqlalchemy import func
+    
+    # Total sessions
+    total_sessions = TroubleshootingSession.query.count()
+    completed_sessions = TroubleshootingSession.query.filter_by(abandoned=False).count()
+    abandoned_sessions = TroubleshootingSession.query.filter_by(abandoned=True).count()
+    
+    # Most common conclusions
+    conclusion_stats = db.session.query(
+        TroubleshootingSession.conclusion_reached,
+        func.count(TroubleshootingSession.id).label('count')
+    ).filter(
+        TroubleshootingSession.conclusion_reached.isnot(None)
+    ).group_by(
+        TroubleshootingSession.conclusion_reached
+    ).order_by(
+        func.count(TroubleshootingSession.id).desc()
+    ).limit(10).all()
+    
+    # Recent sessions
+    recent_sessions = TroubleshootingSession.query.order_by(
+        TroubleshootingSession.started_at.desc()
+    ).limit(20).all()
+    
+    # Average questions per session
+    avg_questions = db.session.query(
+        func.avg(func.json_array_length(TroubleshootingSession.path_taken))
+    ).filter(
+        TroubleshootingSession.path_taken.isnot(None)
+    ).scalar() or 0
+    
+    return render_template('admin_analytics.html',
+                         total_sessions=total_sessions,
+                         completed_sessions=completed_sessions,
+                         abandoned_sessions=abandoned_sessions,
+                         conclusion_stats=conclusion_stats,
+                         recent_sessions=recent_sessions,
+                         avg_questions=round(avg_questions, 1))
+
+@app.route('/admin/session/<session_id>')
+@admin_required
+def admin_view_session(session_id):
+    """View detailed session information"""
+    session_record = TroubleshootingSession.query.filter_by(session_id=session_id).first_or_404()
+    return render_template('admin_session_detail.html', session=session_record)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
