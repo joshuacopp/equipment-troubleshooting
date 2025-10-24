@@ -375,12 +375,16 @@ def admin_analytics():
         TroubleshootingSession.started_at.desc()
     ).limit(20).all()
     
-    # Average questions per session
-    avg_questions = db.session.query(
-        func.avg(func.json_array_length(TroubleshootingSession.path_taken))
-    ).filter(
+    # Average questions per session - calculated in Python
+    all_sessions = TroubleshootingSession.query.filter(
         TroubleshootingSession.path_taken.isnot(None)
-    ).scalar() or 0
+    ).all()
+
+    if all_sessions:
+        total_questions = sum(len(s.path_taken) for s in all_sessions if s.path_taken)
+        avg_questions = round(total_questions / len(all_sessions), 1) if all_sessions else 0
+    else:
+        avg_questions = 0
     
     return render_template('admin_analytics.html',
                          total_sessions=total_sessions,
