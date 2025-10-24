@@ -7,15 +7,6 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
 
-class ReverseProxied:
-    def __init__(self, app, script_name):
-        self.app = app
-        self.script_name = script_name
-
-    def __call__(self, environ, start_response):
-        environ['SCRIPT_NAME'] = self.script_name
-        return self.app(environ, start_response)
-
 app.wsgi_app = ReverseProxied(app.wsgi_app, '/fixit')
 # Database configuration
 database_url = os.environ.get('DATABASE_URL')
