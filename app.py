@@ -7,7 +7,6 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
 
-app.wsgi_app = ReverseProxied(app.wsgi_app, '/fixit')
 # Database configuration
 database_url = os.environ.get('DATABASE_URL')
 if database_url and database_url.startswith('postgres://'):
